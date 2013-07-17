@@ -18,9 +18,6 @@
 package au.com.redboxresearchdata.util.config
 
 import org.apache.log4j.Logger;
-
-import au.com.redboxresearchdata.util.config.Config;
-
 /**
  * 
  * Responsible for config merging.

@@ -4,7 +4,7 @@
 
   <groupId>au.com.redboxresearchdata</groupId>
   <artifactId>utilities</artifactId>
-  <version>${project.version}</version>
+  <version>1.0.0.BUILD-SNAPSHOT</version>
   <packaging>jar</packaging>
 
   <name>Utilities</name>
