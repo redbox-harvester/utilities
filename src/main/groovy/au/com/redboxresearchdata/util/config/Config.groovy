@@ -20,7 +20,7 @@ package au.com.redboxresearchdata.util.config
 import org.apache.log4j.Logger;
 /**
  * 
- * Responsible for config merging.
+ * Responsible for config seeding, loading and merging.
  * 
  * @author Shilo Banihit
  * @since 1.0
@@ -39,7 +39,7 @@ class Config {
 	 * <br>
 	 * This method attempts to load from the filesystem, then falls back to the classpath. It will then create a cache of the loaded configuration on the specified 'file.runtimePath'.
 	 * If 'file.customPath' is not null, then this is merged with the default config, overwriting the default values. Date and time generated is saved at 'generated' property.
-	 * Please do not modify the 'file.runtimePath' file directly, create a 'file.customPath' instead.
+	 * Please do not modify the 'file.runtimePath' file directly, set and modify a 'file.customPath' instead.
 	 * 
 	 * @param environment
 	 * @param defConfigPath
@@ -48,9 +48,26 @@ class Config {
 	public static ConfigObject getConfig(environment, defConfigPath) {
 		def defaultConfigPath = "${defConfigPath}"
 		def defaultConfigFile = new File(defaultConfigPath)
+		
 		if (!defaultConfigFile.exists()) {
-			defaultConfigPath = "classpath:${defConfigPath}"
-			defaultConfigFile = new File(Config.class.getResource("/${defConfigPath}").toURI())
+			defaultConfigPath = "classpath:/${defConfigPath}"
+			log.info("Seeding configuration from ${defaultConfigPath}")
+			def defStream = Config.class.getResourceAsStream("/${defConfigPath}")
+			if (defStream) {
+				if (!defaultConfigFile.getParentFile().mkdirs()) {
+					log.error("Error creating default config file path.")
+					return null
+				}
+				if (!defaultConfigFile.createNewFile()) {
+					log.error("Error creating default config file.")
+					return null
+				}
+				defaultConfigFile.write(defStream.getText("UTF-8"))
+				defStream.close()	
+			} else {
+				log.error("Default config file cannot be accessed from the jar file.")
+				return null
+			}
 		}
 		if (log.isDebugEnabled()) {
 			log.debug("Using environment: ${environment}")
