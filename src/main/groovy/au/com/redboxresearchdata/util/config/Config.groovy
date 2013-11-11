@@ -54,10 +54,11 @@ class Config {
 			log.info("Seeding configuration from ${defaultConfigPath}")
 			def defStream = Config.class.getResourceAsStream("/${defConfigPath}")
 			if (defStream) {
-				if (!defaultConfigFile.getParentFile().mkdirs()) {
-					log.error("Error creating default config file path.")
-					return null
+				def parentDirs = defConfigPath.substring(0, defConfigPath.lastIndexOf("/"))
+				if (log.isDebugEnabled()) {
+					log.debug("Creating parent directory(ies): ${parentDirs}")
 				}
+				new File(parentDirs).mkdirs()
 				if (!defaultConfigFile.createNewFile()) {
 					log.error("Error creating default config file.")
 					return null
@@ -87,9 +88,7 @@ class Config {
 					if (customConfigFile.exists() && customConfigFile.lastModified() > runtimeConfigFile.lastModified() ) {
 						createRuntimeConfig = true
 					}
-				} else {
-					createRuntimeConfig = true
-				}
+				} 
 				if (createRuntimeConfig) {
 					if (customConfigFile?.exists()) {
 						if (log.isDebugEnabled()) {
@@ -125,5 +124,16 @@ class Config {
 			log.error("Please ensure that the default config file exists: ${defaultConfigPath}")
 		}
 		return null
+	}
+	
+	public static void saveConfig(ConfigObject config) {
+		def runtimeConfigPath = config.file.runtimePath
+		def runtimeConfigFile = new File(runtimeConfigPath)
+		if (!runtimeConfigFile.exists()) {
+			log.info("Runtime config path does not exist, creating a new file: ${runtimeConfigPath}")			
+		}
+		runtimeConfigFile.withWriter { writer ->
+			config.writeTo(writer) 
+		}		
 	}
 }

@@ -23,6 +23,7 @@ import java.util.Map;
 import java.util.Properties;
 
 import org.springframework.beans.factory.config.PropertyPlaceholderConfigurer;
+import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
 
 /**
@@ -100,7 +101,7 @@ public class ConfigSlurperPlaceholderConfigurer extends PropertyPlaceholderConfi
         this.defaultEnvironment = defaultEnvironment;
     }
 
-    public void setLocation(Resource location) {
+    public void setLocation(FileSystemResource location) {
         this.locations = new Resource[] { location };
     }
 
@@ -128,8 +129,7 @@ public class ConfigSlurperPlaceholderConfigurer extends PropertyPlaceholderConfi
     private String getEnvironment() {
         if (this.environment == null || this.environment.trim().length() == 0) {
             return this.defaultEnvironment;
-        }
-        else {
+        } else {
             return this.environment;
         }
     }
