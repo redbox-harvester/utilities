@@ -43,42 +43,49 @@ class Config {
 	 * 
 	 * @param environment
 	 * @param defConfigPath
+	 * @param baseDir = optional base directory prefixed to the defConfigPath.
 	 * @return ConfigObject loaded 
 	 */
-	public static ConfigObject getConfig(environment, defConfigPath) {
-		def defaultConfigPath = "${defConfigPath}"
+	public static ConfigObject getConfig(environment, defConfigPath, baseDir= "", binding=[:]) {
+		def defaultConfigPath = "${baseDir}${defConfigPath}"
+		log.info("Loading base config path: ${defaultConfigPath}")
 		def defaultConfigFile = new File(defaultConfigPath)
 		
-		if (!defaultConfigFile.exists()) {
-			defaultConfigPath = "classpath:/${defConfigPath}"
-			log.info("Seeding configuration from ${defaultConfigPath}")
+		if (!defaultConfigFile.exists()) {			
+			log.info("Seeding configuration from classpath:/${defConfigPath}")
 			def defStream = Config.class.getResourceAsStream("/${defConfigPath}")
 			if (defStream) {
-				def parentDirs = defConfigPath.substring(0, defConfigPath.lastIndexOf("/"))
-				if (log.isDebugEnabled()) {
-					log.debug("Creating parent directory(ies): ${parentDirs}")
-				}
-				new File(parentDirs).mkdirs()
+				def parentDirs = defaultConfigPath.lastIndexOf("/") > 0 ? defaultConfigPath.substring(0, defaultConfigPath.lastIndexOf("/")) : ""
+				if (parentDirs) {
+					if (log.isDebugEnabled()) {
+						log.debug("Creating parent directory(ies): ${parentDirs}")
+					}
+					new File(parentDirs).mkdirs()
+				}				
 				if (!defaultConfigFile.createNewFile()) {
-					log.error("Error creating default config file.")
+					log.error("Error creating base config file.")
 					return null
 				}
 				defaultConfigFile.write(defStream.getText("UTF-8"))
 				defStream.close()	
 			} else {
-				log.error("Default config file cannot be accessed from the jar file.")
+				log.debug("Base config file cannot be accessed from the jar file.")
 				return null
 			}
 		}
 		if (log.isDebugEnabled()) {
 			log.debug("Using environment: ${environment}")
-			log.debug("Default config at: ${defaultConfigPath}")
+			log.debug("Base config path at: ${defaultConfigPath}")
 		}
 		if (defaultConfigFile.exists() && defaultConfigFile.isFile()) {
-			def defConfig = new ConfigSlurper(environment).parse(defaultConfigFile.toURI().toURL())
+			def slurper = new ConfigSlurper(environment)
+			slurper.setBinding(binding)
+			def defConfig = slurper.parse(defaultConfigFile.toURI().toURL())
 			def createRuntimeConfig = false
 			def customConfigPath = defConfig.file.customPath
 			def runtimeConfigPath = defConfig.file.runtimePath
+			log.debug("Custom config path at: ${customConfigPath}")
+			log.debug("Runtime config path at: ${runtimeConfigPath}")
 			def customConfigFile = null
 			
 			if (runtimeConfigPath?.trim()) {
@@ -88,13 +95,19 @@ class Config {
 					if (customConfigFile.exists() && customConfigFile.lastModified() > runtimeConfigFile.lastModified() ) {
 						createRuntimeConfig = true
 					}
+				} else {
+					if (!runtimeConfigFile.exists()) {
+						createRuntimeConfig = true
+					}
 				} 
 				if (createRuntimeConfig) {
 					if (customConfigFile?.exists()) {
 						if (log.isDebugEnabled()) {
 							log.debug("Custom config at '${customConfigPath}' exists and seems to have been updated, merging with default.")
 						}
-						def customConfig = new ConfigSlurper(environment).parse(customConfigFile.toURI().toURL())
+						slurper = new ConfigSlurper(environment)
+						slurper.setBinding(binding)
+						def customConfig = slurper.parse(customConfigFile.toURI().toURL())
 						defConfig.merge(customConfig)
 					}
 					if (log.isDebugEnabled()) {
@@ -114,9 +127,11 @@ class Config {
 					}
 				}
 				if (log.isInfoEnabled()) {
-					log.info("Using environment '${environment}' of config at: ${runtimeConfigPath}")
+					log.info("Configuration loaded. Using environment '${environment}' of config at: ${runtimeConfigPath}. Please DO NOT DIRECTLY EDIT this file. If you want to modify configuration, please override corresponding entries at ${customConfigPath}")
 				}
-				return new ConfigSlurper(environment).parse(runtimeConfigFile.toURI().toURL())
+				slurper = new ConfigSlurper(environment)
+				slurper.setBinding(binding)
+				return slurper.parse(runtimeConfigFile.toURI().toURL())
 			} else {
 				log.error("Please specify 'config.runtimePath' in the default config: ${defaultConfigPath}")
 			}

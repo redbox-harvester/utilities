@@ -117,11 +117,13 @@ public class ConfigSlurperPlaceholderConfigurer extends PropertyPlaceholderConfi
      */
     @Override
     protected void loadProperties(Properties props) throws IOException {
-        config = new ConfigObject();
-        ConfigSlurper configSlurper = new ConfigSlurper(getEnvironment());
-        for (Resource location : locations) {
-            config.merge(configSlurper.parse(location.getURL()));
-        }
+    	if (config == null) {
+	        config = new ConfigObject();
+	        ConfigSlurper configSlurper = new ConfigSlurper(getEnvironment());
+	        for (Resource location : locations) {
+	            config.merge(configSlurper.parse(location.getURL()));
+	        }
+    	}    
         flatConfig = config.flatten();
         props.putAll(config.toProperties());
     }
@@ -151,5 +153,9 @@ public class ConfigSlurperPlaceholderConfigurer extends PropertyPlaceholderConfi
     @SuppressWarnings("unchecked")
     public Map getFlatConfig() {
         return this.flatConfig;
+    }
+    
+    public void setConfig(ConfigObject config) {
+    	this.config = config;
     }
 }

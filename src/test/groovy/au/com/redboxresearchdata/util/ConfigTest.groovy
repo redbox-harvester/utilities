@@ -53,7 +53,15 @@ class ConfigTest {
 	@Test
 	public void validConfigWithCustom() {
 		def config = Config.getConfig("testConfigWithCustom", "config-unit-testing.groovy")
-		assertEquals("user2", config.datasource.user)
+		assertEquals("user2", config.datasource.user)		
+		cleanUp(config)
+	}
+	
+	@Test
+	public void validConfigWithCustomPath() {		
+		def config = Config.getConfig("test", "config/config-sample.groovy", "custom/")
+		assertTrue(new File("custom/config/config-sample.groovy").exists())
+		assertFalse(new File("config/config-sample.groovy").exists())
 		cleanUp(config)
 	}
 
