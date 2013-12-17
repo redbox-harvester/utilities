@@ -128,6 +128,7 @@ class JsonFactory {
 			ScriptEngineManager manager = new ScriptEngineManager()				
 			scriptChain.each {scriptConfig->
 				def script = scriptConfig.keySet().toArray()[0]
+				script = (config.harvest.scripts?.scriptBase ? config.harvest.scripts.scriptBase  : "")  + script
 				def configPath = scriptConfig[script]
 				if (!checkData || data != null) {		
 					retval.script = script

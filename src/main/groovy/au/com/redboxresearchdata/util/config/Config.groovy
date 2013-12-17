@@ -147,8 +147,12 @@ class Config {
 		if (!runtimeConfigFile.exists()) {
 			log.info("Runtime config path does not exist, creating a new file: ${runtimeConfigPath}")			
 		}
+		def cloneConfig = config.clone()
+		config.file.ignoreEntriesOnSave?.each {
+			cloneConfig.remove(it)
+		}
 		runtimeConfigFile.withWriter { writer ->
-			config.writeTo(writer) 
+			cloneConfig.writeTo(writer) 
 		}		
 	}
 }
