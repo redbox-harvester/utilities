@@ -23,6 +23,8 @@ import javax.script.ScriptEngine
 import javax.script.ScriptEngineManager
 import org.apache.log4j.Logger
 import org.apache.commons.io.FilenameUtils
+import java.net.InetAddress
+import java.net.NetworkInterface
 
 import au.com.redboxresearchdata.json.JsonFactory;
 /**
@@ -59,7 +61,7 @@ class JsonFactory {
 	/**
 	 * Returns a JSON harvest request message of the list using the type specified.
 	 * 
-	 * This method pre-processes the entries before instatiating each type, and resolves any field maps.
+	 * This method pre-processes the entries before instantiating each type, and resolves any field maps.
 	 * 
 	 * @param list
 	 * @param type
@@ -68,10 +70,25 @@ class JsonFactory {
 	public static String buildJsonStr(List<Map> list, String type, ConfigObject config) {
 		if (JsonFactory.metaClass.respondsTo(JsonFactory.class, targetMethod) != null) {
 			def strBuilder = new StringBuilder()
-			strBuilder.append(getJsonHeaderStr(type))
+			String harvesterId = config.client.harvesterId
+			InetAddress localhost = InetAddress.getLocalHost()
+			String localhostName = localhost.getHostName()
+			StringBuilder ipStrBldr = new StringBuilder()
+			def comma = ""
+			NetworkInterface.getNetworkInterfaces().each {netInt-> 
+				if (netInt.isUp() && !netInt.isLoopback()) {
+					netInt.getInetAddresses().each {addr-> 						
+						ipStrBldr.append(comma)
+						ipStrBldr.append(addr.getHostAddress())
+						comma = ","
+					}
+				}
+			}
+			String hostIp = ipStrBldr.toString()
+			strBuilder.append(getJsonHeaderStr(type, harvesterId, localhostName, hostIp))
 			// launch the preBuild
 			launchScripts(config.harvest.scripts?.preBuild, false, null, type, config)
-			def comma = ""
+			comma = ""
 			list.each {map ->
 				// launch preAssemble
 				def preAssembleResults = launchScripts(config.harvest.scripts?.preAssemble, true, map, type, config)
@@ -248,13 +265,13 @@ class JsonFactory {
 	}
 	
 	/**
-	 * Wraps the JSON type message.
+	 * Wraps the JSON type message, requires hostName and hostIp to further identify source of this request message.
 	 * 
 	 * @param type
 	 * @return header string for the JSON message
 	 */
-	static getJsonHeaderStr(String type) {
-		return "{\"type\":\"${type}Json\",\"data\":{\"data\":["
+	static getJsonHeaderStr(String type, String harvesterId, String hostName, String hostIp) {		
+		return "{\"type\":\"${type}Json\",\"harvesterId\":\"${harvesterId}\", \"hostName\":\"${hostName}\", \"hostIp\":\"${hostIp}\", \"data\":{\"data\":["
 	}
 	
 	/**
