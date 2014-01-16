@@ -1,7 +1,7 @@
 environments {
-	testConfigWithCustom {
+	testConfigWithCustomWithRuntimeChanges {
 		datasource {
 			user = "user2"
 		}
-	}	
+	}
 }

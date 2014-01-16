@@ -33,17 +33,22 @@ class Config {
 	
 	/**
 	 * Loads the configuration using the environment and default config file path parameters. 
-	 * <br>
+	 * <br/>
 	 * The configuration must be of <a href="http://groovy.codehaus.org/ConfigSlurper">ConfigSlurper</a> format and must specify 'file.customPath' and 'file.runtimePath'.
-	 * Configuration must provide a non-empty 'file.runtimePath', whilst 'file.customPath' can be an empty string. 
-	 * <br>
-	 * This method attempts to load from the filesystem, then falls back to the classpath. It will then create a cache of the loaded configuration on the specified 'file.runtimePath'.
-	 * If 'file.customPath' is not null, then this is merged with the default config, overwriting the default values. Date and time generated is saved at 'generated' property.
-	 * Please do not modify the 'file.runtimePath' file directly, set and modify a 'file.customPath' instead.
+	 * Configuration must provide a non-empty 'file.runtimePath', whilst 'file.customPath' can be an empty string. This method returns the contents of 'file.runtimePath'.  
+	 * <br/>
+	 * This method attempts to load from the specified configuration path from the filesystem, then falls back to the classpath. It will then create a cached copy of the default config at the current work directory. 
+	 * <br/>
+	 * After which, it will load the config specified at 'file.runtimePath', cloning the default config to 'file.runtimePath' if the file does not exist. 
+	 * If 'file.runtimePath' already exists, it will return that config. 
+	 * However, if the default config file's last modified date is newer than the 'file.runtimePath', then the 'file.runtimePath' is recreated with the merge of the default config and the current contents of 'file.runtimePath'. 
+	 * <br/> 
+	 * If 'file.customPath' is not null, then this is merged with the 'file.runtimePath'. Please do not modify the 'file.runtimePath' file directly, set and modify a 'file.customPath' instead.
 	 * 
 	 * @param environment
 	 * @param defConfigPath
-	 * @param baseDir = optional base directory prefixed to the defConfigPath.
+	 * @param baseDir The optional base directory prefixed to the defConfigPath.
+	 * @param binding The optional Groovy script Binding to pass to the ConfigSlurper for passing variables to the configuration.
 	 * @return ConfigObject loaded 
 	 */
 	public static ConfigObject getConfig(environment, defConfigPath, baseDir= "", binding=[:]) {
@@ -95,21 +100,33 @@ class Config {
 					if (customConfigFile.exists() && customConfigFile.lastModified() > runtimeConfigFile.lastModified() ) {
 						createRuntimeConfig = true
 					}
-				} else {
-					if (!runtimeConfigFile.exists()) {
-						createRuntimeConfig = true
-					}
 				} 
-				if (createRuntimeConfig) {
+				if (defaultConfigFile.lastModified() > runtimeConfigFile.lastModified()) {
+					createRuntimeConfig = true
+				}
+				if (!runtimeConfigFile.exists()) {
+					createRuntimeConfig = true
+				}				 
+				if (createRuntimeConfig) {					
 					if (customConfigFile?.exists()) {
 						if (log.isDebugEnabled()) {
 							log.debug("Custom config at '${customConfigPath}' exists and seems to have been updated, merging with default.")
-						}
-						slurper = new ConfigSlurper(environment)
-						slurper.setBinding(binding)
+						}						
+						if (runtimeConfigFile.exists()) {							
+							def runtimeConfig = slurper.parse(runtimeConfigFile.toURI().toURL())
+							// first, merge the default with previous runtime
+							defConfig.merge(runtimeConfig)
+						}						
 						def customConfig = slurper.parse(customConfigFile.toURI().toURL())
+						// finally, merge the default with custom
 						defConfig.merge(customConfig)
-					}
+					} else {
+						if (runtimeConfigFile.exists()) {
+							def runtimeConfig = slurper.parse(runtimeConfigFile.toURI().toURL())
+							// merge the default with previous runtime
+							defConfig.merge(runtimeConfig)
+						}
+					} 
 					if (log.isDebugEnabled()) {
 						log.debug("Creating runtime config at: ${runtimeConfigPath}")
 					}
@@ -128,9 +145,7 @@ class Config {
 				}
 				if (log.isInfoEnabled()) {
 					log.info("Configuration loaded. Using environment '${environment}' of config at: ${runtimeConfigPath}. Please DO NOT DIRECTLY EDIT this file. If you want to modify configuration, please override corresponding entries at ${customConfigPath}")
-				}
-				slurper = new ConfigSlurper(environment)
-				slurper.setBinding(binding)
+				}				
 				return slurper.parse(runtimeConfigFile.toURI().toURL())
 			} else {
 				log.error("Please specify 'config.runtimePath' in the default config: ${defaultConfigPath}")
@@ -140,8 +155,12 @@ class Config {
 		}
 		return null
 	}
-	
-	public static void saveConfig(ConfigObject config) {
+	/**
+	 * Saves the ConfigObject to its 'file.runtimePath'. 
+	 * 
+	 * @param env Optional, encapsulates this configuration with this environment name 
+	 */
+	public static void saveConfig(ConfigObject config, String env=null) {
 		def runtimeConfigPath = config.file.runtimePath
 		def runtimeConfigFile = new File(runtimeConfigPath)
 		if (!runtimeConfigFile.exists()) {
@@ -152,7 +171,13 @@ class Config {
 			cloneConfig.remove(it)
 		}
 		runtimeConfigFile.withWriter { writer ->
-			cloneConfig.writeTo(writer) 
+			if (env!=null) {
+				def conf = new ConfigObject()
+				conf["environments"][env] = cloneConfig
+				conf.writeTo(writer)								 
+			} else {
+				cloneConfig.writeTo(writer)
+			}						 
 		}		
 	}
 }

@@ -22,14 +22,11 @@ import static org.junit.Assert.*;
 import org.apache.log4j.Logger;
 import org.junit.Test;
 
-import au.com.redboxresearchdata.util.ConfigTest;
 import au.com.redboxresearchdata.util.config.Config;
 
 /**
  * Unit tests for Config
- * 
- * TODO: Add more tests...
- * 
+ *  
  * @author Shilo Banihit
  *
  */
@@ -45,24 +42,100 @@ class ConfigTest {
 	
 	@Test
 	public void validConfigWithoutCustom() {
-		def config = Config.getConfig("testConfigWithoutCustom", "config-unit-testing.groovy")
+		def config = Config.getConfig("testConfigWithoutCustom", "config-unit-testing.groovy", "src/test/resources/")
 		assertEquals("user", config.datasource.user)
 		cleanUp(config)	
 	}
 	
 	@Test
 	public void validConfigWithCustom() {
-		def config = Config.getConfig("testConfigWithCustom", "config-unit-testing.groovy")
+		def config = Config.getConfig("testConfigWithCustom", "config-unit-testing.groovy", "src/test/resources/")
 		assertEquals("user2", config.datasource.user)		
 		cleanUp(config)
+	}	
+
+	@Test
+	public void testValidConfigWithCustomWithRuntimeChanges() {
+		String env = "testConfigWithCustomWithRuntimeChanges"
+		String configFileName = "config-unit-testing.groovy"
+		String configDir = "src/test/resources/generated/custom/"
+		
+		// clone a copy 
+		new File(configDir).mkdirs()
+		new File(configDir+configFileName).write(new File("src/test/resources/"+configFileName).text)
+				
+		// now load from that cloned copy and add some runtime values
+		def runTimeConfig1 = Config.getConfig(env, configFileName, configDir)
+		assertEquals("user2", runTimeConfig1.datasource.user)
+		String someRuntimeValue1 = "someRuntimeValue1"
+		runTimeConfig1.datasource.runtimeProperty1 = someRuntimeValue1
+		Config.saveConfig(runTimeConfig1, env)
+		
+		// now reload and check if the runtime property exists... 
+		def runTimeConfig2 = Config.getConfig(env, configFileName, configDir)
+		assertEquals("user2", runTimeConfig1.datasource.user)
+		assertEquals(someRuntimeValue1, runTimeConfig2.datasource.runtimeProperty1)
+		
+		// now make a change on the default config, as in the case of an upgrade, (just delete the default config property from the Filesystem in cases of upgrade).
+		ConfigSlurper slurper = new ConfigSlurper(env)
+		File defaultConfigFile = new File(configDir + configFileName)
+		def defaultConfig = slurper.parse(defaultConfigFile.toURI().toURL())
+		String someNewPropertyValue1 = "someNewPropertyValue1"
+		defaultConfig.datasource[someNewPropertyValue1] = someNewPropertyValue1
+		defaultConfigFile.withWriter {writer->
+			def conf = new ConfigObject()
+			conf["environments"][env] = defaultConfig
+			conf.writeTo(writer)
+		}
+		// now check if the new and shiny upgrade property carried over...
+		runTimeConfig2 = Config.getConfig(env, configFileName, configDir)
+		assertEquals("user2", runTimeConfig1.datasource.user)
+		assertEquals(someRuntimeValue1, runTimeConfig2.datasource.runtimeProperty1)
+		assertEquals(someNewPropertyValue1, runTimeConfig2.datasource.someNewPropertyValue1)
+		
+		cleanUp(runTimeConfig2)
 	}
 	
 	@Test
-	public void validConfigWithCustomPath() {		
-		def config = Config.getConfig("test", "config/config-sample.groovy", "custom/")
-		assertTrue(new File("custom/config/config-sample.groovy").exists())
-		assertFalse(new File("config/config-sample.groovy").exists())
-		cleanUp(config)
+	public void testValidConfigWithoutCustomWithRuntimeChanges() {
+		String env = "testConfigWithoutCustomWithRuntimeChanges"
+		String configFileName = "config-unit-testing.groovy"
+		String configDir = "src/test/resources/generated/withoutcustom/"
+		
+		// clone a copy
+		new File(configDir).mkdirs()
+		new File(configDir+configFileName).write(new File("src/test/resources/"+configFileName).text)
+				
+		// now load from that cloned copy and add some runtime values
+		def runTimeConfig1 = Config.getConfig(env, configFileName, configDir)
+		assertEquals("user", runTimeConfig1.datasource.user)
+		String someRuntimeValue1 = "someRuntimeValue1"
+		runTimeConfig1.datasource.runtimeProperty1 = someRuntimeValue1
+		Config.saveConfig(runTimeConfig1, env)
+		
+		// now reload and check if the runtime property exists...
+		def runTimeConfig2 = Config.getConfig(env, configFileName, configDir)
+		assertEquals("user", runTimeConfig1.datasource.user)
+		assertEquals(someRuntimeValue1, runTimeConfig2.datasource.runtimeProperty1)
+		
+		// now make a change on the default config, as in the case of an upgrade, (just delete the default config property from the Filesystem in cases of upgrade).
+		ConfigSlurper slurper = new ConfigSlurper(env)
+		File defaultConfigFile = new File(configDir + configFileName)
+		def defaultConfig = slurper.parse(defaultConfigFile.toURI().toURL())
+		String someNewPropertyValue1 = "someNewPropertyValue1"
+		defaultConfig.datasource[someNewPropertyValue1] = someNewPropertyValue1
+		defaultConfigFile.withWriter {writer->
+			def conf = new ConfigObject()
+			conf["environments"][env] = defaultConfig
+			conf.writeTo(writer)
+		}
+		// now check if the new and shiny upgrade property carried over...
+		runTimeConfig2 = Config.getConfig(env, configFileName, configDir)
+		assertEquals("user", runTimeConfig1.datasource.user)
+		assertEquals(someRuntimeValue1, runTimeConfig2.datasource.runtimeProperty1)
+		assertEquals(someNewPropertyValue1, runTimeConfig2.datasource.someNewPropertyValue1)
+		
+		cleanUp(runTimeConfig2)
 	}
-
+	
 }
