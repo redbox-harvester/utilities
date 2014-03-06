@@ -26,11 +26,11 @@ import org.apache.commons.io.FilenameUtils
 import java.net.InetAddress
 import java.net.NetworkInterface
 
-import au.com.redboxresearchdata.json.JsonFactory;
+import au.com.redboxresearchdata.util.script.ScriptExecutor
 /**
- * Builds JSON harvest messages and instantiates Types from non-JSON data structures.
+ * Builds JSON harvest messages and creates JSON strings from non-JSON data structures.
  * 
- * This class provides allows 2 ways to plug-in scripts that affect how Types are assembled. 
+ * This class provides allows 2 ways to plug-in scripts that affect how JSON strings are assembled. 
  * 
  * A "pre" assembling hook, where each script specified at "harvest.scripts.preAssemble" is executed.  
  * 
@@ -87,11 +87,11 @@ class JsonFactory {
 			String hostIp = ipStrBldr.toString()
 			strBuilder.append(getJsonHeaderStr(type, harvesterId, localhostName, hostIp))
 			// launch the preBuild
-			launchScripts(config.harvest.scripts?.preBuild, false, null, type, config)
+			ScriptExecutor.launchScripts(config.harvest.scripts?.preBuild, false, null, type, config)
 			comma = ""
 			list.each {map ->
 				// launch preAssemble
-				def preAssembleResults = launchScripts(config.harvest.scripts?.preAssemble, true, map, type, config)
+				def preAssembleResults = ScriptExecutor.launchScripts(config.harvest.scripts?.preAssemble, true, map, type, config)
 				if (preAssembleResults.data != null) {
 					strBuilder.append(comma)
 					strBuilder.append(JsonFactory."${targetMethod}"(resolveFields(preAssembleResults.data, type, config), type))
@@ -103,11 +103,11 @@ class JsonFactory {
 			}
 			
 			// launch the postBuild
-			launchScripts(config.harvest.scripts?.postBuild, false, null, type, config)
+			ScriptExecutor.launchScripts(config.harvest.scripts?.postBuild, false, null, type, config)
 			strBuilder.append(getJsonFooterStr(type))
 			return strBuilder.toString()
 		}
-		throw new Exception("Type building method does not exist, check if TypeFactory has the method:'${targetMethod}' with Map and String argument")
+		throw new Exception("JSON building method does not exist, check if TypeFactory has the method:'${targetMethod}' with Map and String argument")
 	}
 	
 	/**
@@ -126,65 +126,6 @@ class JsonFactory {
 			return strBuilder.toString()
 		}
 		throw new Exception("Type building method does not exist, check if TypeFactory has the method:'${targetMethod}' with Map and String argument")
-	}
-	
-	/**
-	 * A method for launching scripts 
-	 * 
-	 * @param scriptChain - list of maps that specify a script and a script config
-	 * @param checkData - if true, stops chain exectuion when a preceeding script nulls the data 
-	 * @param data
-	 * @param type
-	 * @param config
-	 * @return Expando instance containing 'data' (Map) and 'message' (String from script[s]).
-	 */
-	private static Expando launchScripts(scriptChain, boolean checkData, Map data, String type, ConfigObject config) {
-		def retval = new Expando()				
-		log.debug(scriptChain)
-		if (scriptChain != null && scriptChain.size() > 0) {
-			ScriptEngineManager manager = new ScriptEngineManager()				
-			scriptChain.each {scriptConfig->
-				def script = scriptConfig.keySet().toArray()[0]
-				script = (config.harvest.scripts?.scriptBase ? config.harvest.scripts.scriptBase  : "")  + script
-				def configPath = scriptConfig[script]
-				if (!checkData || data != null) {		
-					retval.script = script
-					def engine = manager.getEngineByExtension(FilenameUtils.getExtension(script)) 
-					if (engine != null) {
-						if (log.isDebugEnabled()) {
-							log.debug("Preparing to execute pre-processing script:'${script}'...")
-						}
-						engine.put("type", type)
-						engine.put("data", data)
-						engine.put("config", config)
-						engine.put("log", log)
-						engine.put("scriptPath", script)
-						engine.put("configPath", configPath)
-						engine.eval(new FileReader(new File(script)))
-						data = engine.get("data")					
-						retval.data = engine.get("data")							
-						retval.message = engine.get("message")				
-						if (checkData && data == null) {
-							log.error("Execution of '${script}' invalidated the record. The script returned the ff. message: '${retval.message}")
-						} else {
-							if (log.isDebugEnabled()) {
-								log.debug("Execution of '${script}' successful, message is: '${retval.message}'")
-							}
-						}	
-					} else {
-						log.error("Script type not supported: '${script}'.")
-					}
-				} else {
-					log.error("Previous processing had failed. Halting further pre-processing of this record.")
-					return
-				}
-			}
-		} else {
-		 	retval.script = "None"
-		 	retval.data = data
-			retval.message = "No script executed, pass through." 
-		}
-		return retval		
 	}
 	
 	/**
