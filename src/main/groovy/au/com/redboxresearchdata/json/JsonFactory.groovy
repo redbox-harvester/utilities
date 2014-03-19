@@ -86,12 +86,13 @@ class JsonFactory {
 			}
 			String hostIp = ipStrBldr.toString()
 			strBuilder.append(getJsonHeaderStr(type, harvesterId, localhostName, hostIp))
+			def scriptBase = config.harvest.scripts?.scriptBase ? config.harvest.scripts.scriptBase  : ""
 			// launch the preBuild
-			ScriptExecutor.launchScripts(config.harvest.scripts?.preBuild, false, null, type, config)
+			ScriptExecutor.launchScripts(scriptBase, config.harvest.scripts?.preBuild, false, null, type, config)
 			comma = ""
 			list.each {map ->
 				// launch preAssemble
-				def preAssembleResults = ScriptExecutor.launchScripts(config.harvest.scripts?.preAssemble, true, map, type, config)
+				def preAssembleResults = ScriptExecutor.launchScripts(scriptBase, config.harvest.scripts?.preAssemble, true, map, type, config)
 				if (preAssembleResults.data != null) {
 					strBuilder.append(comma)
 					strBuilder.append(JsonFactory."${targetMethod}"(resolveFields(preAssembleResults.data, type, config), type))
@@ -103,7 +104,7 @@ class JsonFactory {
 			}
 			
 			// launch the postBuild
-			ScriptExecutor.launchScripts(config.harvest.scripts?.postBuild, false, null, type, config)
+			ScriptExecutor.launchScripts(scriptBase, config.harvest.scripts?.postBuild, false, null, type, config)
 			strBuilder.append(getJsonFooterStr(type))
 			return strBuilder.toString()
 		}

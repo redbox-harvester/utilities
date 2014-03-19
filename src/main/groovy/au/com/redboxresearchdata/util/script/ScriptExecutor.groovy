@@ -46,14 +46,14 @@ class ScriptExecutor {
 	 * @param config
 	 * @return Expando instance containing 'data' (Map) and 'message' (String from script[s]).
 	 */
-	public static Expando launchScripts(scriptChain, boolean checkData, data, String type, ConfigObject config) {
+	public static Expando launchScripts(scriptBase, scriptChain, boolean checkData, data, String type, ConfigObject config) {
 		def retval = new Expando()				
 		log.debug(scriptChain)
 		if (scriptChain != null && scriptChain.size() > 0) {
 			ScriptEngineManager manager = new ScriptEngineManager()				
 			scriptChain.each {scriptConfig->
 				def script = scriptConfig.keySet().toArray()[0]
-				script = (config.harvest.scripts?.scriptBase ? config.harvest.scripts.scriptBase  : "")  + script
+				script = scriptBase  + script
 				def configPath = scriptConfig[script]
 				if (!checkData || data != null) {		
 					retval.script = script
