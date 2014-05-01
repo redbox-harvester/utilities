@@ -72,7 +72,7 @@ class TransmissionInterceptorAdapter extends ChannelInterceptorAdapter implement
 	 }	 
 
     @Override
-	 public Message<?> preSend(Message<?> message, MessageChannel channel) {
+	 Message<?> preSend(Message<?> message, MessageChannel channel) {
 		 if (shouldCountPresending) { 
 		 	sendCount.incrementAndGet()
 		 }
@@ -80,12 +80,12 @@ class TransmissionInterceptorAdapter extends ChannelInterceptorAdapter implement
 	}
 	 
 	@Override
-	public void setApplicationContext(ApplicationContext arg0)
+	void setApplicationContext(ApplicationContext arg0)
 			throws BeansException {
 			applicationContext = (AbstractApplicationContext) arg0
 	}
 			
-	public void incMessageCount() {
+	void incMessageCount() {
 		sendCount.incrementAndGet()
 	}
 }
