@@ -71,7 +71,8 @@ class TransmissionInterceptorAdapter extends ChannelInterceptorAdapter implement
 		}
 	 }	 
 
-	Message<?> preSend(Message<?> message, MessageChannel channel) {
+    @Override
+	 public Message<?> preSend(Message<?> message, MessageChannel channel) {
 		 if (shouldCountPresending) { 
 		 	sendCount.incrementAndGet()
 		 }

@@ -25,7 +25,8 @@ import java.util.Map;
 import javax.script.ScriptEngine
 import javax.script.ScriptEngineManager
 import org.apache.commons.io.FilenameUtils
-import org.apache.log4j.Logger;
+import org.apache.log4j.Logger
+import javax.script.ScriptException
 /**
  * Convenience class for launching JVM supported scripts.
  * 
@@ -68,7 +69,13 @@ class ScriptExecutor {
 						engine.put("log", log)
 						engine.put("scriptPath", script)
 						engine.put("configPath", configPath)
-						engine.eval(new FileReader(new File(script)))
+                        //Do not allow errors in script to fail silently.
+                        try {
+                            engine.eval(new FileReader(new File(script)))
+                        } catch (ScriptException scriptException){
+                             log.error("An error has occurred in script ${script}. Halting further processing of this record.", scriptException)
+                             return
+                        }
 						data = engine.get("data")					
 						retval.data = engine.get("data")							
 						retval.message = engine.get("message")				

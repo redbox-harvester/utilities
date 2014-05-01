@@ -65,9 +65,11 @@ class JsonFactory {
 	 * 
 	 * @param list
 	 * @param type
+     * @param config
+     * @param harvestType : an optional type used when overall harvest type used to process different record types, each with their own rules
 	 * @return JSON String of harvest request message.
 	 */
-	public static String buildJsonStr(List<Map> list, String type, ConfigObject config) {
+	public static String buildJsonStr(List<Map> list, String type, ConfigObject config, String harvestType = null) {
 		if (JsonFactory.metaClass.respondsTo(JsonFactory.class, targetMethod) != null) {
 			def strBuilder = new StringBuilder()
 			String harvesterId = config.client.harvesterId
@@ -75,9 +77,9 @@ class JsonFactory {
 			String localhostName = localhost.getHostName()
 			StringBuilder ipStrBldr = new StringBuilder()
 			def comma = ""
-			NetworkInterface.getNetworkInterfaces().each {netInt-> 
+			NetworkInterface.getNetworkInterfaces().each {netInt->
 				if (netInt.isUp() && !netInt.isLoopback()) {
-					netInt.getInetAddresses().each {addr-> 						
+					netInt.getInetAddresses().each {addr->
 						ipStrBldr.append(comma)
 						ipStrBldr.append(addr.getHostAddress())
 						comma = ","
@@ -85,7 +87,14 @@ class JsonFactory {
 				}
 			}
 			String hostIp = ipStrBldr.toString()
-			strBuilder.append(getJsonHeaderStr(type, harvesterId, localhostName, hostIp))
+            if (harvestType?.trim()) {
+                if (log.isDebugEnabled()) {
+                    log.debug("Attaching harvestType: '${harvestType}' as message type...")
+                }
+                strBuilder.append getJsonHeaderStr(harvestType, harvesterId, localhostName, hostIp)
+            } else {
+                strBuilder.append getJsonHeaderStr(type, harvesterId, localhostName, hostIp)
+            }
 			def scriptBase = config.harvest.scripts?.scriptBase ? config.harvest.scripts.scriptBase  : ""
 			// launch the preBuild
 			ScriptExecutor.launchScripts(scriptBase, config.harvest.scripts?.preBuild, false, null, type, config)
@@ -105,7 +114,7 @@ class JsonFactory {
 			
 			// launch the postBuild
 			ScriptExecutor.launchScripts(scriptBase, config.harvest.scripts?.postBuild, false, null, type, config)
-			strBuilder.append(getJsonFooterStr(type))
+			strBuilder.append(getJsonFooterStr())
 			return strBuilder.toString()
 		}
 		throw new Exception("JSON building method does not exist, check if TypeFactory has the method:'${targetMethod}' with Map and String argument")
@@ -123,7 +132,7 @@ class JsonFactory {
 			def strBuilder = new StringBuilder()
 			strBuilder.append(getJsonHeaderStr(type))
 			strBuilder.append(JsonFactory."${targetMethod}"(resolveFields(data, type, config), type).toJsonStr())
-			strBuilder.append(getJsonFooterStr(type))
+			strBuilder.append(getJsonFooterStr())
 			return strBuilder.toString()
 		}
 		throw new Exception("Type building method does not exist, check if TypeFactory has the method:'${targetMethod}' with Map and String argument")
@@ -222,7 +231,7 @@ class JsonFactory {
 	 * @param type
 	 * @return footer string for the JSON message.
 	 */
-	static getJsonFooterStr(String type) {
+	static getJsonFooterStr() {
 		return "]}}"
 	}
 }
