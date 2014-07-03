@@ -2,3 +2,6 @@
 /src/test/resources/generated
 /src/test/resources/runtime
 /sql
+documentation-site/node_modules/
+documentation-site/out/
+.settings/

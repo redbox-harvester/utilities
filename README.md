@@ -1,7 +1,6 @@
 Miscellaneous Utilities related to Spring Integration and JSON Harvester
 ==========================================================
 
-Please see:
+See [documentation][utilUrl].
 
-https://github.com/redbox-mint-contrib/json-harvester-client/
-https://github.com/redbox-mint-contrib/plugin-harvester-json/
+[utilUrl]: http://harvester-utilities-snapshot.redboxresearchdata.com.au/ "Util URL"

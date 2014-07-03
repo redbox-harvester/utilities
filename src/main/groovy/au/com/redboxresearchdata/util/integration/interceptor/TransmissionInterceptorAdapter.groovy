@@ -1,4 +1,4 @@
-/*******************************************************************************
+/*
 *Copyright (C) 2013 Queensland Cyber Infrastructure Foundation (http://www.qcif.edu.au/)
 *
 *This program is free software: you can redistribute it and/or modify
@@ -14,7 +14,7 @@
 *You should have received a copy of the GNU General Public License along
 *with this program; if not, write to the Free Software Foundation, Inc.,
 *51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
-******************************************************************************/
+*/
 package au.com.redboxresearchdata.util.integration.interceptor
 
 import java.util.concurrent.atomic.AtomicInteger
@@ -35,7 +35,7 @@ import org.springframework.context.support.AbstractApplicationContext
  * 
  * TODO: add event processing
  * 
- * @author Shilo Banihit
+ * @author <a href="https://github.com/shilob" target="_blank">Shilo Banihit</a>
  * @since 1.0
  *
  */

@@ -1,0 +1,11 @@
+---
+layout: 'default'
+title: 'Home'
+---
+
+<div class="jumbotron">
+	<h2>Harvester Utilities</h2>
+	<p>
+		ReDBox Harvester Utilities is a library of classes that are meant to be reused across <a href="<%= @client.url%>">Harvester Client</a> implemenations.
+	</p>
+</div>
