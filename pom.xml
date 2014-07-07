@@ -90,7 +90,7 @@
 	        <version>1.2</version>
 	        <configuration>
 	        	<windowTitle>API-ReDBox Harvester Client</windowTitle>
-	        	<groovydocOutputDirectory>documentation-site/src/files/apidocs</groovydocOutputDirectory>
+	        	<groovydocOutputDirectory>documentation-site/src/raw/apidocs</groovydocOutputDirectory>
 	        	<docTitle>ReDBox Harvester - Utilities API </docTitle>
 	        	<footer>ReDBox Harvester - Utilities - Copyright (C) 2014 Queensland Cyber Infrastructure Foundation (http://www.qcif.edu.au/)</footer>
 	        </configuration>

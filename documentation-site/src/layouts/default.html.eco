@@ -33,8 +33,61 @@
 		<script async src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
 	<![endif]-->
 
-	<!-- Styles -->
-	<%- @getBlock('styles').add(@site.styles).toHTML() %>
+	<script type="text/javascript">
+		var projName = "/<%= @site.project %>";
+		var siteUrl = "<%= @site.url %>";
+		var needsRewrite = function() {
+			var pathname = location.pathname;
+			return pathname.indexOf(projName) == 0 || pathname.indexOf("/release") == 0;
+		};
+		var getNewPath = function(projName, pathName) {
+			var newPath = projName;
+			if (pathName.indexOf(projName) == -1) {
+				newPath = "/release";
+				var releaseNumMatch = pathName.match(/\/release\/(.*)/);
+				if (releaseNumMatch != null && releaseNumMatch[1] != "") {
+					var pathCompArr = releaseNumMatch[1].split("/");
+					newPath = newPath + "/" + pathCompArr[0];
+				}
+			}
+			return newPath;
+		};
+		var parseUrl = function(url) {
+			var parser =  document.createElement('a');
+			parser.href = url;
+			return parser;
+		};
+		var writeElement = function(arr, prefix, suffix ) {
+			var rewrite = needsRewrite();
+			var newPath = "";
+			if (rewrite) {
+				newPath = getNewPath(projName, location.pathname);
+			} 
+			for (var i=0; i<arr.length; i++) {
+				var curPath = arr[i];
+				var parser = parseUrl(curPath); 
+				if (parser.host == location.host) {
+					curPath = newPath + curPath;
+				}
+				document.write(prefix+curPath+suffix);
+			}
+		};
+		
+		var writeStyles = function() {
+			var stylesArr = "<%= @site.styles %>".split(",");
+			var prefix = "<link  rel='stylesheet' href='";
+			var suffix = "' />";
+			writeElement(stylesArr, prefix, suffix);
+		};
+		
+		var writeScripts = function() {
+			var scriptsArr = "<%= @site.scripts %>".split(",");
+			var prefix = "<script defer='defer' src=\"";
+			var suffix = "\"></ script>";
+			writeElement(scriptsArr, prefix, suffix);
+		};
+		writeStyles();
+	</script>
 </head>
 <body>
 	<!-- Menu -->
@@ -46,7 +99,7 @@
 					<span class="icon-bar"></span>
 					<span class="icon-bar"></span>
 				</button>
-				<div class="navbar-brand"><a class="navbar-link" href="<%= @parent.url %>"><%= @site.projectName %></a> - <a class="navbar-link" href="<%= @site.url %>"><%= @site.subProjectName %> </a></div>
+				<div class="navbar-brand"><a class="navbar-link rewritable-url" href="<%= @parent.url %>"><%= @site.projectName %></a> - <a class="navbar-link rewritable-url" href="<%= @site.url %>"><%= @site.subProjectName %> </a></div>
 				
 			</div>
 			<div class="navbar-collapse collapse">
@@ -57,14 +110,14 @@
 							about="<%= document.url %>"
 							class="<%= 'active'	if @document.url is document.url %>"
 						>
-							<a href="<%= document.url %>" property="dc:title">
+							<a href="<%= document.url %>" property="dc:title" class="rewritable-url">
 								<%= document.title %>
 							</a>
 						</li>
 					<% end %>
 
 					<li>
-					<a href="/apidocs/" target="_blank">API</a>
+					<a href="/apidocs/" target="_blank" class="rewritable-url">API</a>
 					</li>
 				</ul>
 			</div><!--/.navbar-collapse -->
@@ -83,12 +136,12 @@
 		<div class="container">
 			<div class="col-md-6">
 				<div class="panel-body text-center">
-					<a href="<%= @parent.url %>" class="btn btn-default btn-med">Main Documentation</a>
+					<a href="<%= @parent.url %>" class="btn btn-default btn-med rewritable-url">Main Documentation</a>
 				</div>
 			</div>
 			<div class="col-md-6">
 				<div class="panel-body text-center">
-					<a href="<%= @site.url %>" class="btn btn-default btn-med"><%= @site.subProjectName%> Documentation</a>
+					<a href="<%= @site.url %>" class="btn btn-default btn-med rewritable-url"><%= @site.subProjectName%> Documentation</a>
 				</div>
 			</div>
 			<p class="pull-left">&copy; <%- (new Date()).getFullYear() %> <a href="http://www.qcif.edu.au/" target="_blank">Queensland Cyber Infrastructure Foundation</a></p>
@@ -96,6 +149,26 @@
 		</div>
     </div>
 	<!-- Scripts -->
-	<%- @getBlock('scripts').add(@site.scripts).toHTML() %>
+	<script type="text/javascript">
+		onload = function () {
+			if (location.hostname.indexOf("github.io") >= 0) {
+				location.href = siteUrl + location.pathname.replace(projName+"/", "") + location.search + location.hash;
+			}
+			var pathname = location.pathname;
+			if (needsRewrite()) {
+				rewriteNavLinkUrl(projName, pathname);
+			}
+		};		
+		var rewriteNavLinkUrl = function(projName, pathName) {
+			var newPath = getNewPath(projName, pathName);			
+			for (var i = 0; i < document.links.length; i++) {
+				if (document.links[i].className.indexOf("rewritable-url") >= 0 ) {
+					var parser = parseUrl(document.links[i].href);
+					document.links[i].href =  parser.protocol + "//" + parser.host + newPath + parser.pathname + parser.search + parser.hash;
+				}
+			}			
+		};
+		writeScripts();
+	</script>
 </body>
 </html>

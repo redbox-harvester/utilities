@@ -14,8 +14,7 @@ docpadConfig = {
 
 			# Here are some old site urls that you would like to redirect from
 			oldUrls: [
-				'www.website.com',
-				'website.herokuapp.com'
+				'redbox-harvester.github.io/utilities'
 			]
 
 			# The default title of our website
@@ -107,6 +106,9 @@ docpadConfig = {
 					tarExtractClean: true
 				}
 			]
+		raw:
+			raw:
+				src: 'raw'
 
 
 	# =================================
@@ -142,6 +144,7 @@ docpadConfig = {
 			templateData:
 				site:
 					url: "http://localhost:9780/"
+					project: "utilities"
 				parent:
 					url: "http://localhost:9778/"
 				client:
@@ -150,6 +153,7 @@ docpadConfig = {
 			templateData:
 				site:
 					url: "http://harvester-utilities-snapshot.redboxresearchdata.com.au/"
+					project: "utilities"
 				parent:
 					url: "http://harvester-snapshot.redboxresearchdata.com.au/"
 				client:
@@ -158,6 +162,7 @@ docpadConfig = {
 			templateData:
 				site:
 					url: "http://harvester-utilities-release.redboxresearchdata.com.au/"
+					project: "utilities"
 				parent:
 					url: "http://harvester-release.redboxresearchdata.com.au/"
 				client:
